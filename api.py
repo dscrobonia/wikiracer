@@ -37,11 +37,6 @@ class race:
 				except ValueError as e:
 					self.addError(message, 'invalid timeout - timeout could not be read as int')
 
-			# read in thread count if specified
-			#if 'threads' in data:
-			#	if int(data.threads) > 0 and int(data.threads) < 10:
-			#		threads = int(data.threads)
-
 			# run the racers
 			if 'errors' not in message:
 				result = driver.drive(data.start, data.end, timeout)
