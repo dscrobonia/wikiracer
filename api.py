@@ -19,8 +19,6 @@ class race:
 		if 'end' not in data or str(data.end) is '':
 			self.addError(message, 'please specify a end page')
 
-		print data.start + " : " + data.end
-
 		if 'start' in data and 'end' in data:
 			timeout = 60
 			threads = 1
