@@ -46,6 +46,9 @@ http://localhost:8080/race?start=Smoothie%20King&end=Altoids
 http://localhost:8080/race?start=Smoothie%20King&end=Altoids&timeout=30
 ```
 
+Also available via docker at dscrobonia/wikiracer:1.0
+
+
 ### Strategies Attempted
 
 The first approach was to use a straight bidirectional BFS, with a thread starting on each end of the search. This worked okay for some searches, but slow for others.
@@ -70,5 +73,4 @@ To improve the performance of the actual search itself, the 'related pages' rank
 
 ### To Do
 - add more unit tests
-- dockerize
 - enable multiple start threads
