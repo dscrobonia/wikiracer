@@ -13,10 +13,10 @@ class race:
 
 		data = web.input()
 
-		if 'start' not in data or str(data.start) is '':
+		if 'start' not in data or str(data.start.encode('utf-8')) is '':
 			self.addError(message, 'please specify a start page')
 
-		if 'end' not in data or str(data.end) is '':
+		if 'end' not in data or str(data.end.encode('utf-8')) is '':
 			self.addError(message, 'please specify a end page')
 
 		if 'start' in data and 'end' in data:
