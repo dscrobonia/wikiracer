@@ -10,7 +10,7 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 '''
 Driver to run the Racers given a start and an end page.
 '''
-def drive(start, end, timeout=60, threads=1):
+def drive(start, end, timeout=60, threads=2):
 	message = {}
 
 	# data stores shared between threads
@@ -18,6 +18,10 @@ def drive(start, end, timeout=60, threads=1):
 	backCache = {}
 	forwardQueue = []
 	backVisited = {}
+	threading = {
+		'waiting': 0,
+		'total': threads
+	}
 	result = {
 		'networkTime': 0,
 		'isFound': False,
@@ -29,10 +33,10 @@ def drive(start, end, timeout=60, threads=1):
 	for i in range(threads):
 		name = 'start-' + str(i)
 
-		racers.append(Racer(name, 'forward', start, forwardCache, backCache, backVisited, forwardQueue, result))
+		racers.append(Racer(name, 'forward', start, forwardCache, backCache, backVisited, forwardQueue, threading, result))
 
 	# back racer
-	racers.append(Racer('end', 'back', end, backCache, forwardCache, backVisited, [], result))
+	racers.append(Racer('end', 'back', end, backCache, forwardCache, backVisited, [], {}, result))
 
 	start = time.time()
 

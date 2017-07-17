@@ -53,13 +53,15 @@ class Racer(threading.Thread):
 	queue		priority queue of links to crawl
 	result		dict holding information about completion
 	'''
-	def __init__(self, name, direction, page, myCache, otherCache, backVisited, queue, result):
+	def __init__(self, name, direction, page, myCache, otherCache, backVisited, queue, threads, result):
 		self.direction = direction
 		self.page = page
 		self.myCache = myCache
 		self.otherCache = otherCache
 		self.backVisited = backVisited
 		self.queue = queue
+		self.threads= threads
+		self.isWaiting = False
 		self.result = result
 
 		# initialize queue & cache with page
@@ -71,7 +73,8 @@ class Racer(threading.Thread):
 		return
 
 	'''
-	Runs when process is started.
+	Runs when process is started. Sets up https connection and
+	begins crawling through links
 	'''
 	def run(self):
 
@@ -81,7 +84,21 @@ class Racer(threading.Thread):
 
 		logging.info('Starting with page: ' + self.page)
 
+		# start crawling through links
+		self.crawl()
+
+		# close connection before quitting
+		self.close()
+
+		logging.info('Closing Thread')
+
+		return
+
+	def crawl(self):
 		while len(self.queue) > 0 and not self.result['isFound']:
+			if self.isWaiting:
+				self.isWaiting = False
+				self.threads['waiting'] = self.threads['waiting'] - 1
 
 			# take top 50 for batched request
 			titles = self.get_titles(10)
@@ -96,25 +113,23 @@ class Racer(threading.Thread):
 			else:
 				self.check_backward(links)
 
-		# no path could be found
+		# check if complete
 		if self.direction is 'forward' and len(self.queue) is 0:
-			# THREADS TO FIX/ REMOVE
-			#time.sleep(1)
-			#self.run()
-			#time.sleep(1)
-			#if len(self.queue) > 0:
-			#	self.run()
 
-			if not self.result['isFound']:
+			# check other threads are running
+			if self.threads['waiting'] < self.threads['total']:
+				if not self.isWaiting:
+					self.isWaiting = True
+
+					self.threads['waiting'] = self.threads['waiting'] + 1
+				
+				time.sleep(0.1)
+
+				self.crawl()
+
+			elif not self.result['isFound']:
 				self.result['isFound'] = True
 				self.result['path'] = 'No possible path.'
-
-		# close connection before quitting
-		self.close()
-
-		logging.info('Closing Thread')
-
-		return
 
 	'''
 	Gathers links for the forward running racer(s) and checks whether it 
