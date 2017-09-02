@@ -33,10 +33,12 @@ def drive(start, end, timeout=60, threads=2):
 	for i in range(threads):
 		name = 'start-' + str(i)
 
-		racers.append(Racer(name, 'forward', start, forwardCache, backCache, backVisited, forwardQueue, threading, result))
+		#racers.append(Racer(name, 'forward', start, forwardCache, backCache, backVisited, forwardQueue, threading, result))
+		racers.append(Racer(name, 'forward', start, forwardCache, backCache, backVisited, forwardQueue, result))
 
 	# back racer
-	racers.append(Racer('end', 'back', end, backCache, forwardCache, backVisited, [], {}, result))
+	#racers.append(Racer('end', 'back', end, backCache, forwardCache, backVisited, [], {}, result))
+	racers.append(Racer('end', 'back', end, backCache, forwardCache, backVisited, [], result))
 
 	start = time.time()
 

@@ -2,6 +2,7 @@ import logging
 import threading
 import urllib
 import heapq
+import Queue
 import collections
 import json
 import time
@@ -53,21 +54,21 @@ class Racer(threading.Thread):
 	queue		priority queue of links to crawl
 	result		dict holding information about completion
 	'''
-	def __init__(self, name, direction, page, myCache, otherCache, backVisited, queue, threads, result):
+	def __init__(self, name, direction, page, myCache, otherCache, backVisited, queue, result):
 		self.direction = direction
 		self.page = page
 		self.myCache = myCache
 		self.otherCache = otherCache
 		self.backVisited = backVisited
-		self.queue = queue
-		self.threads= threads
+		self.queue = Queue.PriorityQueue()
+		#self.threads= threads
 		self.isWaiting = False
 		self.result = result
 
 		# initialize queue & cache with page
 		if self.page not in self.myCache:
 			self.myCache[self.page] = ''
-			heapq.heappush(self.queue, (0, self.new_link(self.page, '')))
+			self.queue.put((0, self.new_link(self.page, '')))
 
 		threading.Thread.__init__(self, name = name)
 		return
@@ -94,11 +95,13 @@ class Racer(threading.Thread):
 
 		return
 
+	'''
+	Pops links from the queue and checks them for new links. Runs
+	until all threads of the same direction are complete
+	'''
 	def crawl(self):
-		while len(self.queue) > 0 and not self.result['isFound']:
-			if self.isWaiting:
-				self.isWaiting = False
-				self.threads['waiting'] = self.threads['waiting'] - 1
+
+		while not self.result['isFound']:
 
 			# take top 50 for batched request
 			titles = self.get_titles(10)
@@ -113,23 +116,41 @@ class Racer(threading.Thread):
 			else:
 				self.check_backward(links)
 
-		# check if complete
-		if self.direction is 'forward' and len(self.queue) is 0:
+	# def crawl(self):
+	# 	canCrawl = True
 
-			# check other threads are running
-			if self.threads['waiting'] < self.threads['total']:
-				if not self.isWaiting:
-					self.isWaiting = True
+	# 	while canCrawl:
 
-					self.threads['waiting'] = self.threads['waiting'] + 1
+	# 		if self.queue.qsize() > 0 and not self.result['isFound']:
+
+	# 			self.unset_waiting()
+
+	# 			# take top 50 for batched request
+	# 			titles = self.get_titles(10)
 				
-				time.sleep(0.1)
+	# 			# get all links
+	# 			links = self.get_links(titles)
 
-				self.crawl()
+	# 			# process the links depending on direction
+	# 			if self.direction is 'forward':
+	# 				self.check_forward(links)
 
-			elif not self.result['isFound']:
-				self.result['isFound'] = True
-				self.result['path'] = 'No possible path.'
+	# 			else:
+	# 				self.check_backward(links)
+
+	# 		elif self.direction is 'forward' and self.queue.qsize() is 0:
+
+	# 			# check other threads are running
+	# 			if self.threads['waiting'] < self.threads['total']:
+	# 				self.set_waiting()
+
+	# 			else:
+	# 				self.result['isFound'] = True
+	# 				self.result['path'] = 'No possible path.'
+	# 				canCrawl = False
+					
+	# 		else:
+	# 			canCrawl = False
 
 	'''
 	Gathers links for the forward running racer(s) and checks whether it 
@@ -155,7 +176,7 @@ class Racer(threading.Thread):
 				rank = self.rank_link(link)
 
 				# add link to queue
-				heapq.heappush(self.queue, (rank, link))
+				self.queue.put((rank, link))
 	
 	'''
 	Gathers links for the back running racer(s) and confirms they are
@@ -197,7 +218,7 @@ class Racer(threading.Thread):
 					rank = 0
 
 					# add link to queue
-					heapq.heappush(self.queue, (rank, link))
+					self.queue.put((rank, link))
 
 	'''
 	Collects all of the links associated with a group of pages. If the
@@ -235,17 +256,19 @@ class Racer(threading.Thread):
 			else:
 				isContinuing = False
 
-			# check if page was entered not quite correct
-			if 'normalized' in response['query']:
-				normalized = response['query']['normalized'][0]
-				self.myCache[normalized['to']] = normalized['from']
 
-			# extract links from pages
-			pages = response['query']['pages']
+			if 'query' in response:
+				# check if page was entered not quite correct
+				if 'normalized' in response['query']:
+					normalized = response['query']['normalized'][0]
+					self.myCache[normalized['to']] = normalized['from']
 
-			for num, page in pages.iteritems():
-				if 'links' in page:
-					links.extend(list(map(lambda link: self.new_link(link['title'], page['title']), page['links'])))
+				# extract links from pages
+				pages = response['query']['pages']
+
+				for num, page in pages.iteritems():
+					if 'links' in page:
+						links.extend(list(map(lambda link: self.new_link(link['title'], page['title']), page['links'])))
 
 		return links
 
@@ -366,8 +389,8 @@ class Racer(threading.Thread):
 		titles = []
 
 		for i in range(count):
-			if len(self.queue) > 0:
-				titles.append(heapq.heappop(self.queue)[1].title)
+			if self.queue.qsize() > 0:
+				titles.append(self.queue.get()[1].title)
 
 		return '|'.join(titles)
 
@@ -376,6 +399,28 @@ class Racer(threading.Thread):
 	'''
 	def new_link(self, title, parent):
 		return Link(title = title, parent = parent)
+
+
+	'''
+	Set waiting flag to True if not set already and increase shared counter
+	'''
+	def set_waiting(self):
+		#if self.direction is 'forward':
+			#logging.debug('waiting: ' + str(self.threads['waiting']))
+		if not self.isWaiting:
+			self.isWaiting = True
+			self.threads['waiting'] = self.threads['waiting'] + 1
+			time.sleep(.1)
+
+	'''
+	Set waiting flag to False if not set already and decrease shared counter
+	'''
+	def unset_waiting(self):
+		#if self.direction is 'forward':
+			#logging.debug('waiting: ' + str(self.threads['waiting']))
+		if self.isWaiting:
+			self.isWaiting = False
+			self.threads['waiting'] = self.threads['waiting'] - 1
 
 	'''
 	Open an http connection with the host site.

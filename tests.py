@@ -44,7 +44,7 @@ class MyTest(unittest.TestCase):
 	def test_get_titles_five_titles_request_five(self):
 
 		for i in range(4):
-			self.starter.queue.append((0, Link(title=WOLF, parent='')))
+			self.starter.queue.put((0, Link(title=WOLF, parent='')))
 
 		self.assertEqual( self.starter.get_titles(10), 'Gray Wolf|Gray Wolf|Gray Wolf|Gray Wolf|Gray Wolf')
 
@@ -61,10 +61,6 @@ class MyTest(unittest.TestCase):
 		links = list(map(lambda title: Link(title=title, parent='Segment'), titles))
 
 		self.assertEqual( self.starter.get_links('Segment'), links )
-
-	def test_get_links_jung_yong_jun(self):
-
-		self.assertEqual( self.starter.get_links('Jung_Yong-jun'), [] )
 
 	'''
 	get_reversible_links
