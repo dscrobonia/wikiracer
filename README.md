@@ -37,7 +37,8 @@ python api.py 8044
 Requests can be made to the /race end point. Parameters include:
 - start (required) : the title of the Wikipedia article to start from
 - end (required) : the title of the Wikipedia article to end on 
-- timeout (optional) : time in seconds before giving up on the search (60 seconds by default)
+- timeout (optional) : the time in seconds before giving up on the search (60 seconds by default)
+- threads (optional) : the number of start threads to run (max 9)
 
 Example Requests:
 ```
@@ -75,4 +76,3 @@ To improve the performance of the actual search itself, the 'related pages' rank
 
 ### To Do
 - add more unit tests
-- enable multiple start threads
