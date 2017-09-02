@@ -46,8 +46,10 @@ http://localhost:8080/race?start=Smoothie%20King&end=Altoids
 http://localhost:8080/race?start=Smoothie%20King&end=Altoids&timeout=30
 ```
 
-Also available via docker at dscrobonia/wikiracer:1.0
-
+Also available via docker at dscrobonia/wikiracer
+```
+docker run -p 8080:8080 dscrobonia/wikiracer
+```
 
 ### Strategies Attempted
 
